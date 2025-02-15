@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
+import "./WeatherApp.css";
 
 const WeatherApp = () => {
   const [city, setCity] = useState("");
@@ -8,116 +9,99 @@ const WeatherApp = () => {
   const [unit, setUnit] = useState("metric");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [lat, setLat] = useState("");
-  const [lon, setLon] = useState("");
 
   const API_KEY = process.env.REACT_APP_OPENWEATHER_API_KEY;
-  const API_URL = "https://api.openweathermap.org/data/2.5/onecall/timemachine";
+  const GEO_API_URL = "https://api.openweathermap.org/geo/1.0/direct";
+  const WEATHER_HISTORY_API_URL = "https://history.openweathermap.org/data/2.5/history/city";
 
   const fetchWeather = async () => {
-    if (!city || !startDate || !endDate || !lat || !lon) {
-      setError("Please enter a city name, latitude, longitude, and select a date range");
+    if (!city || !startDate || !endDate) {
+      setError("Please enter a city name and select a date range.");
       return;
     }
 
-    setWeatherData([]); // Reset previous results
+    setWeatherData([]);
     setError(null);
 
-    let start = new Date(startDate);
-    let end = new Date(endDate);
-    let current = new Date(start);
+    try {
+      const geoResponse = await axios.get(GEO_API_URL, {
+        params: {
+          q: city,
+          limit: 1,
+          appid: API_KEY,
+        },
+      });
 
-    let weatherResults = [];
-
-    while (current <= end) {
-      let timestamp = Math.floor(current.getTime() / 1000);
-
-      try {
-        const response = await axios.get(API_URL, {
-          params: {
-            lat: lat,
-            lon: lon,
-            dt: timestamp,
-            units: unit,
-            appid: API_KEY,
-          },
-        });
-
-        weatherResults.push({
-          date: current.toISOString().split("T")[0], // Store date as YYYY-MM-DD
-          temp: response.data.current.temp,
-          humidity: response.data.current.humidity,
-          wind_speed: response.data.current.wind_speed,
-        });
-
-      } catch (err) {
-        setError("City not found or an error occurred");
+      if (geoResponse.data.length === 0) {
+        setError("Invalid city name. Please try again.");
+        return;
       }
 
-      // Move to the next day
-      current.setDate(current.getDate() + 1);
-    }
+      const { lat, lon } = geoResponse.data[0];
 
-    setWeatherData(weatherResults);
+      const weatherResponse = await axios.get(WEATHER_HISTORY_API_URL, {
+        params: {
+          lat: lat,
+          lon: lon,
+          type: "hour",
+          start: Math.floor(new Date(startDate).getTime() / 1000),
+          end: Math.floor(new Date(endDate).getTime() / 1000),
+          units: unit,
+          appid: API_KEY,
+        },
+      });
+
+      setWeatherData(weatherResponse.data.list);
+    } catch (err) {
+      setError("Error fetching data. Please try again.");
+    }
   };
 
   return (
-    <div className="container mx-auto p-4 text-center">
-      <h1 className="text-2xl font-bold mb-4">Weather App</h1>
-      <input
-        type="text"
-        value={city}
-        onChange={(e) => setCity(e.target.value)}
-        placeholder="Enter city name"
-        className="border p-2 rounded"
-      />
-      <input
-        type="text"
-        value={lat}
-        onChange={(e) => setLat(e.target.value)}
-        placeholder="Enter latitude"
-        className="border p-2 rounded ml-2"
-      />
-      <input
-        type="text"
-        value={lon}
-        onChange={(e) => setLon(e.target.value)}
-        placeholder="Enter longitude"
-        className="border p-2 rounded ml-2"
-      />
-      <input
-        type="date"
-        value={startDate}
-        onChange={(e) => setStartDate(e.target.value)}
-        className="border p-2 rounded ml-2"
-      />
-      <input
-        type="date"
-        value={endDate}
-        onChange={(e) => setEndDate(e.target.value)}
-        className="border p-2 rounded ml-2"
-      />
-      <button onClick={fetchWeather} className="bg-blue-500 text-white p-2 ml-2 rounded">
-        Get Weather
-      </button>
-      <div className="mt-4">
-        <button onClick={() => setUnit("metric")} className="mr-2 p-2 border rounded">
+    <div className="weather-container">
+      <h1 className="title">Weather App</h1>
+      <div className="input-container">
+        <input
+          type="text"
+          value={city}
+          onChange={(e) => setCity(e.target.value)}
+          placeholder="Enter city name"
+          className="input-field"
+        />
+        <input
+          type="date"
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
+          className="input-field"
+        />
+        <input
+          type="date"
+          value={endDate}
+          onChange={(e) => setEndDate(e.target.value)}
+          className="input-field"
+        />
+        <button onClick={fetchWeather} className="search-button">
+          Get Weather
+        </button>
+      </div>
+      <div className="unit-toggle">
+        <button onClick={() => setUnit("metric")} className="unit-button">
           Celsius
         </button>
-        <button onClick={() => setUnit("imperial")} className="p-2 border rounded">
+        <button onClick={() => setUnit("imperial")} className="unit-button">
           Fahrenheit
         </button>
       </div>
-      {error && <p className="text-red-500 mt-2">{error}</p>}
+      {error && <p className="error-message">{error}</p>}
       {weatherData.length > 0 && (
-        <div className="mt-4 border p-4 rounded shadow-md">
-          <h2 className="text-xl font-semibold">Weather Data</h2>
+        <div className="weather-results">
+          <h2 className="subtitle">Weather Data</h2>
           {weatherData.map((day, index) => (
-            <div key={index} className="border p-2 mt-2 rounded shadow-sm">
-              <h3 className="font-semibold">{day.date}</h3>
-              <p>Temperature: {day.temp}°{unit === "metric" ? "C" : "F"}</p>
-              <p>Humidity: {day.humidity}%</p>
-              <p>Wind Speed: {day.wind_speed} {unit === "metric" ? "m/s" : "mph"}</p>
+            <div key={index} className="weather-card">
+              <h3>{new Date(day.dt * 1000).toLocaleDateString()}</h3>
+              <p>Temperature: {day.main.temp}°{unit === "metric" ? "C" : "F"}</p>
+              <p>Humidity: {day.main.humidity}%</p>
+              <p>Wind Speed: {day.wind.speed} {unit === "metric" ? "m/s" : "mph"}</p>
             </div>
           ))}
         </div>
