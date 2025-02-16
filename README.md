@@ -66,4 +66,5 @@ This project is open-source and available under the MIT License.
 - Ensure your OpenWeather API plan includes **historical weather data access**.
 - If you get a `401 Unauthorized` error, check your API key and subscription level.
 - Modify the CSS in `WeatherApp.css` for further customization.
+- **If there are multiple cities with the same name, you need to mention the country or state to avoid ambiguity.**
 

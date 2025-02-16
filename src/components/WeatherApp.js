@@ -6,11 +6,11 @@ const WeatherApp = () => {
   const [city, setCity] = useState("");
   const [weatherData, setWeatherData] = useState([]);
   const [error, setError] = useState(null);
-  const [unit, setUnit] = useState("metric"); // Initially set to metric (Celsius)
+  const [unit, setUnit] = useState("metric"); 
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
-  const API_KEY = "4634bb512e16d276a6219eebb4980de8"; // Your OpenWeather API Key
+  const API_KEY = process.env.REACT_APP_WEATHER_API_KEY; 
   const GEO_API_URL = "https://api.openweathermap.org/geo/1.0/direct";
   const WEATHER_FORECAST_API_URL = "https://api.openweathermap.org/data/2.5/forecast";
   const WEATHER_HISTORY_API_URL = "https://api.openweathermap.org/data/2.5/weather";
